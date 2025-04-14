@@ -1,0 +1,4 @@
+{
+  "scripts": ["script.ts", "beat.ts"],
+  "styles": ["style.css"]
+}

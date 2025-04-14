@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "target": "ES2017"
+    },
+    "files": [
+        "script.ts",
+        "beat.ts"
+    ]
+}
