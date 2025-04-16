@@ -2,11 +2,13 @@ class Beat {
     startTime: number;
     currentTime: number;
     interval: number;
+    loopSpr: HTMLImageElement;
 
     constructor(int: number) {
         this.startTime = Date.now();
         this.currentTime = 0;
-        this.interval = int;
+        this.interval = Math.floor(1000 * 60 / int);
+        this.loopSpr = document.querySelector("img");
     }
 
     update(): void {
@@ -39,6 +41,30 @@ class Beat {
         }
         return value;
     }
+
+    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 8, 455);
+        ctx.strokeStyle = "white";
+        ctx.lineTo(canvas.width / 2, 455);
+        ctx.moveTo(canvas.width / 2, 425);
+        ctx.lineTo(canvas.width / 2, 485);
+        ctx.moveTo(canvas.width / 2, 455);
+        ctx.lineTo(canvas.width * 7 / 8, 455);
+        ctx.stroke();
+    
+        ctx.imageSmoothingEnabled = false;
+        let offset = 0;
+        if (this.currentTime / this.interval < 0.5)
+            offset = canvas.width / 2 + this.currentTime * canvas.width * 3 / 4 / this.interval;
+        else
+            offset = canvas.width / 8 + (this.currentTime / this.interval - 0.5) * canvas.width * 3 / 4;
+    
+        let factor = 1 - this.getIntTime(Date.now()) / this.interval;
+        ctx.drawImage(this.loopSpr, 0, 0, 16, 16, offset - 24 * factor, 455 - 24 * factor - 8 * factor, 64 * factor, 64 * factor);
+        ctx.imageSmoothingEnabled = true;
+    }
 }
 
 const canvas: HTMLCanvasElement = document.querySelector("canvas");
@@ -47,7 +73,7 @@ canvas.width = 500;
 canvas.height = 500;
 
 
-const beat = new Beat(1500);
+const beat = new Beat(100);
 
 function clearBlack() {
     ctx.fillStyle = "black";
@@ -87,6 +113,10 @@ class TimedText {
         this.content.push([new TextThing(text, x, y, color, size), duration, Date.now()]);
     }
 
+    setElem(index: number, text: string, x: number, y: number, color: string, size: number, duration: number) {
+        this.content[index] = [new TextThing(text, x, y, color, size), duration, Date.now()];
+    }
+
     update() {
         for (let i = 0; i < this.content.length; i++) {
             const text = this.content[i];
@@ -104,14 +134,17 @@ class TimedText {
 document.onkeydown = (event) => {
     event.preventDefault();
     const accuracy: [string, string] = beat.getRating(Date.now());
-    ratingText.addElem(accuracy[0], canvas.width / 2, 50, accuracy[1], 50, 1000);
+    ratingText.setElem(0, accuracy[0], canvas.width / 2, 50, accuracy[1], 50, 1000);
 }
 
 const ratingText = new TimedText();
 
-const textTest = new TextThing("hi", canvas.width / 2, 50, "green", 48);
-
-const loopSpr = document.querySelector("img");
+function showGood() {
+    ctx.beginPath();
+    ctx.fillStyle = "green";
+    ctx.arc(canvas.width / 2, 400, 35, 0, 360);
+    ctx.fill();
+}
 
 function update() {
     requestAnimationFrame(update);
@@ -122,32 +155,18 @@ function update() {
     ctx.textAlign = "center";
     ratingText.update();
 
-    /*
-    ctx.fillStyle = beat.getRating(Date.now())[1];
-    ctx.font = "48px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(`${beat.currentTime}`, canvas.width / 2, 455);
-    */
+    switch (beat.getRating(Date.now())[1]) {
+        case "green":
+            showGood();
+            break;
+        case "#98ff98":
+            showGood();
+            break;
+        default:
+            break;
+    }
 
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 8, 455);
-    ctx.strokeStyle = "white";
-    ctx.lineTo(canvas.width / 2, 455);
-    ctx.moveTo(canvas.width / 2, 425);
-    ctx.lineTo(canvas.width / 2, 485);
-    ctx.moveTo(canvas.width / 2, 455);
-    ctx.lineTo(canvas.width * 7 / 8, 455);
-    ctx.stroke();
-
-    ctx.imageSmoothingEnabled = false;
-    let offset = 0;
-    if (beat.currentTime / beat.interval < 0.5)
-        offset = canvas.width / 2 + beat.currentTime * canvas.width * 3 / 4 / beat.interval;
-    else
-        offset = canvas.width / 8 + (beat.currentTime / beat.interval - 0.5) * canvas.width * 3 / 4;
-    ctx.drawImage(loopSpr, 0, 0, 16, 16, offset - 24, 455 - 24, 48, 48);
-    ctx.imageSmoothingEnabled = true;
+    beat.draw(canvas, ctx);
 }
 
 requestAnimationFrame(update);
